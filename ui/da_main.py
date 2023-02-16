@@ -1,22 +1,17 @@
 #pylint: disable=import-error
-import keopsUI
 import iconLib
-import das
 import maya.cmds
 from Qt import QtWidgets
 from Qt import QtCore
 from Qt import QtGui
+import ui
 #pyline: enable=import-error
 import deAnimator
 from functools import partial
-from keopsPrint import PrintShop
-
-pShop = PrintShop(prefix="[keops][deAnimator]")
-Print = pShop._print
 
 Rigs = {}
 
-class DeAnimator(keopsUI.BaseUI):
+class DeAnimator(ui.BaseUI):
     def __init__(self, parent=None):
         super(DeAnimator, self).__init__(parent=parent)
         self.verbose = False
@@ -25,8 +20,7 @@ class DeAnimator(keopsUI.BaseUI):
         self.mzButton = iconLib.functions.mzButton
         self.name = "DeAnimator"
         self.ver = "0.1.0"
-        self.ui = das.Struct()
-
+        self.ui = {}
 
     def build(self):
         if maya.cmds.selectionConnection("deAnimator", q=True, ex=True):
@@ -79,7 +73,7 @@ class DeAnimator(keopsUI.BaseUI):
                                                   (doit, "right", 5)],
                                               ac=[(chkb, "top", 5, chka),
                                                  (aide, "right", 5, doit)])
-        ui = das.Struct()
+        ui = {}
         ui.window = [wndw, "", "window"]
         ui.panel = [panl, "The friendly deAnimator menu for cool dudes and rockin' homeboys", "paneLayout"]
         ui.form =[main, "", ""]

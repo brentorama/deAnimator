@@ -1,13 +1,7 @@
 #pylint: disable=import-error
-import rigAbstraction
 import maya.cmds
-import pyf
+import os
 #pylint: enable=import-error
-import timeFilter.functions
-import keopsPrint 
-
-pShop = keopsPrint.PrintShop(prefix="[keops][deAnimator]")
-Print = pShop._print
 
     
 class DeAnimator(object):
@@ -15,14 +9,15 @@ class DeAnimator(object):
         super(DeAnimator, self).__init__()
 
     def getRigs(self, allRigs=False, simple=False, verbose=False):
-        rigs = {}
-        for x in rigAbstraction.List():
-            rig = Rig(x, simple=simple)
-            if len(rig.curves) > 0 or allRigs:
-                rigs[rig.name] = rig
-                if verbose:
-                    Print("Got %s" % rig.name)
-        return rigs
+        pass
+        # rigs = {}
+        # for x in XXXXXX.List():
+        #     rig = Rig(x, simple=simple)
+        #     if len(rig.curves) > 0 or allRigs:
+        #         rigs[rig.name] = rig
+        #         if verbose:
+        #             print("Got %s" % rig.name)
+        # return rigs
 
 
     def getExtras(self, verbose=False):
@@ -50,7 +45,7 @@ class DeAnimator(object):
             readOnly = maya.cmds.ls(children, readOnly=True) or []
             if not readOnly and maya.cmds.objExists(x):
                 if dryrun or verbose:
-                    Print("Goodbye %s" % x)
+                    print("Goodbye %s" % x)
                 if not dryrun:
                     maya.cmds.delete(x)
             else:
@@ -61,7 +56,7 @@ class Rig(object):
     def __init__(self, rigAbs=None, simple=False):
         super(Rig, self).__init__()
         if not isinstance(rigAbs, rigAbstraction.Rig):
-            Print("Requires rigAbstraction.Rig as first arg")
+            print("Requires rigAbstraction.Rig as first arg")
             raise Exception()
         self.name = None
         # self.attrs = set([])
@@ -81,7 +76,7 @@ class Rig(object):
                 self.ctls.update(rigAbs.listControllers(group))
                 # self.attrs.update(rigAbs.listAttrs(group))
             except:
-                Print("%s not supported as deAnimatable" % self.name)
+                print("%s not supported as deAnimatable" % self.name)
                 continue
             else:
                 self.getCurves()
@@ -89,11 +84,11 @@ class Rig(object):
 
     def report(self, verbose=False):
         if not verbose:
-            Print(self.name, head=True)
-            Print("ctls : %s" % len(self.ctls))
-            Print("animCurves : %s" % len(self.curves))
+            print(self.name, head=True)
+            print("ctls : %s" % len(self.ctls))
+            print("animCurves : %s" % len(self.curves))
         else:
-            Print(self.__dict__)
+            print(self.__dict__)
 
 
     def getCurves(self):
@@ -105,13 +100,63 @@ class Rig(object):
     def deleteCurves(self, dryrun=False, verbose=False):
         curves = [x for x in self.curves if maya.cmds.objExists(x)]
         msg = KillCurves(curves, dryrun=dryrun, verbose=verbose)
-        Print(self.name, head=True)
-        Print(msg)
+        print(self.name, head=True)
+        print(msg)
 
 
 def GetCurves(node):
-    curves = timeFilter.functions.GetAllDGNodes(inNode=node, findNodes = "animCurves")
+    curves = GetAllDGNodes(inNode=node, findNodes = "animCurves")
     return curves
+
+
+def GetAllDGNodes(inNode=None, where="up", findNodes=None):
+    # Search the DGraph for animCurves connected to a given nodes
+    direction = None
+
+    if type(findNodes) not in (list, set):
+        findNodes = [findNodes]
+
+    canFind = {"animCurves" :  maya.OpenMaya.MFn.kAnimCurve,
+               "transforms" :  maya.OpenMaya.MFn.kTransform,
+               "constraints":  maya.OpenMaya.MFn.kConstraint,
+               "caches":       maya.OpenMaya.MFn.kCacheFile,
+               "pluginDefs":   maya.OpenMaya.MFn.kPluginDeformerNode,
+               "time":         maya.OpenMaya.MFn.kTime} 
+
+    nodeMfnTypes = set([])
+
+    for x in findNodes:
+        mfnType = canFind.get(x, None)
+        if not mfnType:
+            print("Bad nodeType key: %s, valid are %s" % (x, ", ".join(canFind.keys())))
+            raise Exception()
+        nodeMfnTypes.add(mfnType)
+
+    graphDirection = {"up"   : maya.OpenMaya.MItDependencyGraph.kUpstream,
+                      "down" : maya.OpenMaya.MItDependencyGraph.kDownstream}
+
+    direction = graphDirection.get(where, None)
+
+    # Create a MSelectionList with our selected items:
+    selList = maya.OpenMaya.MSelectionList()
+    selList.add(inNode)
+    mObject = maya.OpenMaya.MObject()  # The current object
+    selList.getDependNode( 0, mObject )
+
+    # Create a dependency graph iterator for our current object:
+    nodes = set([])
+
+    for nodeMfnType in nodeMfnTypes:
+        depIt = maya.OpenMaya.MItDependencyGraph(mObject, nodeMfnType, direction, maya.OpenMaya.MItDependencyGraph.kDepthFirst, maya.OpenMaya.MItDependencyGraph.kNodeLevel)
+
+        # Loop through the iterator and find all nodes of specified type
+        while not depIt.isDone():
+            nodes.add(maya.OpenMaya.MFnDependencyNode(depIt.currentItem()).name())
+            depIt.next()
+
+    nodes = list(nodes)
+
+    return nodes
 
 
 def KillGeneric(node, dryrun=False, verbose=False):
@@ -122,8 +167,8 @@ def KillGeneric(node, dryrun=False, verbose=False):
         curves.update(GetCurves(x))
 
     msg = KillCurves(curves, dryrun=dryrun, verbose=verbose)
-    Print("%s" % node, head=True)
-    Print(msg)
+    print("%s" % node, head=True)
+    print(msg)
 
 
 def KillCurves(curves, dryrun=False, verbose=False):
@@ -138,7 +183,7 @@ def KillCurves(curves, dryrun=False, verbose=False):
     for x in curves:
         connex = maya.cmds.listConnections(x, d=True, s=False, p=True, c=True)
         if dryrun or verbose:
-            Print(connex)
+            print(connex)
 
         if not dryrun:
             try:
@@ -146,7 +191,7 @@ def KillCurves(curves, dryrun=False, verbose=False):
                 maya.cmds.delete(x)
             except:
                 if verbose:
-                    Print("Fail : %s" % x)
+                    print("Fail : %s" % x)
             else:
                 killCount += 1
 
@@ -160,8 +205,8 @@ def KillCurves(curves, dryrun=False, verbose=False):
 
 def GetAbout():
     _about = "Could not find about file"
-    helpFile = pyf.path.join(pyf.path.dirname(pyf.path.abspath(__file__)), "about.md")
-    if pyf.path.isfile(helpFile):
+    helpFile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "about.md")
+    if os.path.isfile(helpFile):
         f = open(helpFile, "r")
         _about = (f.read()) 
     return _about    

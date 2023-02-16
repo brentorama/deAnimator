@@ -1,17 +1,13 @@
 #pylint: disable=import-error
 import maya.cmds
 import inspect
-import pyf
 import imp
-import iconLib.functions
+import os
+import glob
 # from abc import ABCMeta
 #pylint: enable=import-error
-import traceback
 import sys
-from keopsPrint import PrintShop
 
-pShop = PrintShop(prefix="[keops][keopsUI]")
-Print = pShop._print
 class Factory(object):
     __Instance = None
     def __new__(klass, *args, **kwargs):
@@ -27,10 +23,10 @@ class Factory(object):
 
     def __initialize(self):
         self.uis = {}
-        path = pyf.path.dirname(__file__)
+        path = os.path.dirname(__file__)
 
-        for f in pyf.glob("%s/[!__]*.py" % path):
-            filename = pyf.path.splitext(pyf.path.split(f)[1])[0]
+        for f in glob.glob("%s/[!__]*.py" % path):
+            filename = os.path.splitext(os.path.split(f)[1])[0]
             module = imp.load_source(filename, f)
             inspector = inspect.getmembers(module, inspect.isclass)
             for name, obj in inspector:
@@ -108,3 +104,4 @@ class BaseUI(object):
                 Print("not found : %s" % self.name)
 
 
+import iconLib.functions

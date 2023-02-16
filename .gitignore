@@ -1,0 +1,8 @@
+/release
+/debug
+/*.dblite
+*.pyc
+/.build
+test.*
+/sandbox
+/RB*

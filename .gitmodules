@@ -1,0 +1,3 @@
+[submodule "sconsutils"]
+	path = sconsutils
+	url = git@github.com:marza-animation-planet/sconsutils.git
